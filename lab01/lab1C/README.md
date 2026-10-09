@@ -21,7 +21,7 @@ The permissions tell us the setuid bit is set - the s in `r-s`, where you’d no
 
 Running it blind shows the surface: a banner, a password prompt, and a single integer input.
 
-![](./img/running_the_binary.png)
+![](./img/lab1c.png)
 
 ## Disassembling `main`
  
