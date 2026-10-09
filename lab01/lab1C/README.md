@@ -15,4 +15,4 @@ In this challenge we exploit a SUID binary that guards a privileged action behin
  
 The target is a 32-bit x86 ELF. Before disassembling anything, the first thing to read is the **file permissions**, because they define the trust boundary - who may run the binary and whose privileges it runs with:
 
-![](./img/firstlook.png)
+![](./img/ls_permissions.png)
