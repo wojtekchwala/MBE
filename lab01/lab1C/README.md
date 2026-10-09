@@ -15,7 +15,7 @@ In this challenge we exploit a SUID binary that guards a privileged action behin
  
 The target is a 32-bit x86 ELF. Before disassembling anything, the first thing to read is the **file permissions**, because they define the trust boundary - who may run the binary and whose privileges it runs with:
 
-![](./img/ls_permissions.png)
+![](./img/ls.png)
 
 The permissions tell us the setuid bit is set - the s in `r-s`, where you’d normally see `r-x`. It means the binary always runs as its owner, `lab1B`, no matter who starts it. That is why solving it matters: the reversing below just finds a password, but the setuid bit is what turns that into a lab1B shell, and `lab1B`’s `.pass` unlocks the next tier.
 
