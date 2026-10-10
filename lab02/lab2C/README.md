@@ -14,7 +14,7 @@ lab02 is the Memory Corruption lab, and this is its entry tier. Where lab01 was 
 
 ## First look
  
-Logged in as `lab2C`, we read the target's permissions:
+Logged in as `lab2C`, the first thing we look at is the target’s permissions:
 
 ![](./img/ls_lab2C.png)
 
