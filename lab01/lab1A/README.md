@@ -25,7 +25,7 @@ Run it blind to see the surface. It prints a login banner, reads a username, the
 
 ## Disassembling `main`
 
-`main` reads a username (fgets) and a serial (scanf %u), then calls auth(username, serial); a zero return authenticates and runs system("/bin/sh").
+`main` reads a username (fgets) and a serial (scanf %u), then calls auth(username, serial); a zero return authenticates and runs `system("/bin/sh")`.
 
 ![](./img/disassemble_main_1A.png)
 
