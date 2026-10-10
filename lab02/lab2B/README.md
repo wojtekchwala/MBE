@@ -189,3 +189,5 @@ When `print_name` executes `ret`, it jumps into `shell`, which runs its own prol
 That leaves a gap of 4 bytes between `shell` and the argument. Those bytes fall on the slot `shell` treats as its own saved return address. We never let `shell` return, so they can be anything.
 
 ![](./img/solved_2B.png)
+
+FLAG: `i_c4ll_wh4t_i_w4nt_n00b`
