@@ -1,5 +1,3 @@
-
-Lab2b · MD
 # Modern Binary Exploitation - lab2B
  
 | | |
