@@ -9,7 +9,7 @@
 
  ## Overview
  
-One or two sentences: the serial is derived from the username by a checksum, and an anti-debug check guards the routine. We defeat the anti-debug, read the checksum the program computes, and feed it back as the serial.
+The final lab01 tier is a serial check. The serial is not stored in the binary but computed from the username, and a ptrace anti-debug check tries to stop us from watching that computation. We disable the anti-debug inside the debugger, let the program work out the serial for our username, and read it straight out of memory.
 
 ## First look
  
