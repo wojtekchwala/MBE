@@ -30,7 +30,7 @@ We load the binary in GDB and disassemble `main`. Since the program's whole logi
 ![](./img/disassemble_main.png)
 
 The relevant block (AT&T syntax):
-```
+```asm
 0x080486e6 <+57>:  lea    0x1c(%esp),%eax      ; eax = &buf  (buf at esp+0x1c)
 0x080486ea <+61>:  mov    %eax,0x4(%esp)       ; scanf arg2 = &buf
 0x080486ee <+65>:  movl   $0x8048818,(%esp)    ; scanf arg1 = format string ptr
