@@ -18,7 +18,7 @@ Difficulty generally rises across labs; the `A` tier within each lab is harder t
 | --- | --- | --- | --- |
 | [lab01](./lab01) | Reverse Engineering | 01–03 | ☑ |
 | [lab02](./lab02) | Memory Corruption | 04 | ☑ |
-| [lab03](./lab03) | Shellcoding | 05 | ☐ |
+| [lab03](./lab03) | Shellcoding | 05 | ◐ |
 | [lab04](./lab04) | Format Strings | 06 | ☐ |
 | [project1](./project1) | Comprehensive (labs 01–06) | 01–06 | ☐ |
 | [lab05](./lab05) | DEP and ROP | 07 | ☐ |
