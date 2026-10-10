@@ -176,4 +176,16 @@ The value that landed in `EIP` came from offset 27 in the pattern, so 27 bytes o
 
 ## Exploitation
 
-Because `shell` takes an argument, the overwrite is not a bare "return to `shell`". We have to hand `shell` an argument the way a normal caller would, by laying out a small fake frame past the return address.
+Because `shell` takes an argument, overwriting the return address with just `shell`'s address is not enough. We have to hand `shell` an argument the way a normal caller would, by laying out a small fake frame past the return address.
+
+The payload has four parts:
+
+![](./img/payload-table.svg)
+
+The one part that is not obvious is why the argument sits two slots past the return address, rather than right after `shell`. It comes down to how `shell` builds its own frame.
+
+When `print_name` executes `ret`, it jumps into `shell`, which runs its own prologue and sets up a fresh frame. A function reads its first argument from `[ebp+0x8]` of its own frame. Working that offset back through `shell`'s prologue lands on the slot `0xc` bytes past the return address we overwrote, which is where we place the `/bin/sh` pointer.
+ 
+That leaves a gap of 4 bytes between `shell` and the argument. Those bytes fall on the slot `shell` treats as its own saved return address. We never let `shell` return, so they can be anything.
+
+![](./img/solved_2B.svg)
