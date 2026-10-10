@@ -48,7 +48,7 @@ The relevant block:
 ```
 
 The program reads one integer, compares it to `0x149a`, and if they match it calls system() on a hardcoded string. Otherwise it prints a failure message and exits.
-Before the `scanf` and `system` calls, the code loads pointer values as their arguments (`0x8048818`, `0x804882b`). On 32-bit x86 (cdecl), arguments are passed on the stack, so the value placed in `(%esp)` right before a `call` is that function's first argument. That is why `0x8048818` is `scanf`'s first argument and `0x804882b` is `system`'s. What those pointers actually contain isn't in the disassembly, though, so we read them with `x/s`.
+Before the `scanf` and `system` calls, the code loads pointer values as their arguments (`0x8048818`, `0x804882b`). On 32-bit x86 (cdecl), arguments are passed on the stack, so the value placed in `[esp]` right before a `call` is that function's first argument. That is why `0x8048818` is `scanf`'s first argument and `0x804882b` is `system`'s. What those pointers actually contain isn't in the disassembly, though, so we read them with `x/s`.
 
 
 ### Confirming each pointer against the binary
@@ -67,7 +67,7 @@ gdb-peda$ x/s 0x8048818
 0x8048818:	"%d"
 ```
 
-`"%d"` means `scanf` parses a signed decimal integer. To match `cmp $0x149a,%eax` we enter the decimal form of `0x149a`, not the hex digits. Had the format been `"%x"`, the input would be `149a` instead. The format string, not the compare, decides the encoding.
+`"%d"` means `scanf` parses a signed decimal integer. To match `cmp eax,0x149a` we enter the decimal form of `0x149a`, not the hex digits. Had the format been `"%x"`, the input would be `149a` instead. The format string, not the compare, decides the encoding.
 
 The `system` argument is the payload of the whole level:
 
