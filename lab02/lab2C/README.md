@@ -14,13 +14,13 @@ lab02 is the Memory Corruption lab, and this is its entry tier. Where lab01 was 
 
 ## First look
  
-Logged in as `lab2C`, read the target's permissions:
+Logged in as `lab2C`, we read the target's permissions:
 
 ![](./img/ls_lab2C.png)
 
 As in lab01, the binary is setuid and owned by the next user up, so reaching `shell()` yields a shell as that user.
 
-Check the mitigation posture before planning anything:
+We check the mitigation posture at first:
 
 ![](./img/checksec_2C.png)
 
