@@ -64,6 +64,36 @@ This is where the work happens. `print_name` takes the argument `main` passed it
 
 ![](./img/disassemble_print_name_2B.png)
 
+The `strcpy` writes into `ebp-0x17` with no limit on length, so we can write past the end of that buffer and into whatever follows it on the stack. To know what we can reach, we need to see what sits above the buffer. That means reconstructing the frame, which is built in three steps.
+
+**Step 1 - the `call` in `main`** pushes the return address. From the `main` dump:
+
+```asm
+0x08048733 <+54>:  call   0x80486d0 <print_name>   ; pushes 0x08048738, then jumps
+```
+
+`call` pushes the address of the next instruction (`0x08048738`, where execution resumes after `print_name` returns) and jumps. So the moment `print_name` begins, the top of the stack holds the return address.
+
+**Step 2 - `push ebp`** saves the caller's frame pointer on top of the return address, pushing it one slot down:
+
+```asm
+0x080486d0 <+0>:   push   ebp                      ; saved ebp now above the return address
+```
+
+**Step 3 - `mov ebp,esp`** points `ebp` at the saved frame pointer:
+
+```asm
+0x080486d1 <+1>:   mov    ebp,esp                  ; ebp now points at saved ebp
+```
+
+With `ebp` fixed, the top of the frame is laid out as:
+
+```
+ebp+0x4   ->  saved return address   (pushed by the call in main)
+ebp+0x0   ->  saved ebp              (pushed by push ebp; ebp points here)
+ebp-0x17  ->  the strcpy buffer
+```
+
 The relevant block:
  
 ```asm
