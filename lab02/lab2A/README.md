@@ -6,7 +6,7 @@
 | **Tier** | A |
 | **Target** | `/levels/lab02/lab2A` |
 | **Class** | stack buffer overflow (loop-counter corruption)|
-| **Goal** |  |
+| **Goal** | retrieve the .pass for lab2A |
 
 
 
