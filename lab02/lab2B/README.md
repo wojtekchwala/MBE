@@ -64,7 +64,18 @@ This is where the work happens. `print_name` takes the argument `main` passed it
 
 ![](./img/disassemble_print_name_2B.png)
 
-The `strcpy` writes into `ebp-0x17` with no limit on length, so we can write past the end of that buffer and into whatever follows it on the stack. To know what we can reach, we need to see what sits above the buffer. That means reconstructing the frame, which is built in three steps.
+Most of the function is setup for the `printf` that produces the `Hello %s` line, which is cosmetic. The lines that matter are the ones that set up and perform the copy, and the `ret` at the end:
+
+```asm
+0x080486dd <+13>:  lea    eax,[ebp-0x17]           ; eax = address of the buffer
+0x080486e0 <+16>:  mov    DWORD PTR [esp],eax      ; strcpy arg1 (dest) = buffer
+0x080486e3 <+19>:  call   0x8048580 <strcpy@plt>   ; strcpy(buf, input)  -- no length check
+0x080486fc <+44>:  ret                             ; returns to the saved return address
+```
+
+Two facts come out of this. First, the destination is computed as `ebp-0x17`: `lea` loads that address into `eax`, and it is placed at `[esp]`, which is `strcpy`'s first argument, the destination. So the buffer being written sits at `ebp-0x17`. Second, `strcpy` copies until it hits a NUL byte in the source with no regard for how large the destination is, so the length of what gets written is entirely controlled by our input.
+ 
+That makes the write unbounded: we can copy past the end of the buffer and into whatever follows it on the stack. The function then ends in `ret`, which takes the address it returns to from the stack. To know what a long enough copy can reach, and whether that includes the value `ret` uses, we need to see what sits above the buffer. That means reconstructing the frame, which is built in three steps.
 
 **Step 1 - the `call` in `main`** pushes the return address. From the `main` dump:
 
