@@ -10,7 +10,7 @@
 
 ## Overview
  
-lab02 is the Memory Corruption lab, and this is its entry tier. Where lab01 was solved by reading and reversing the program’s logic, lab2C introduces the first actual bug: an unbounded strcpy that overflows a stack buffer. Just past that buffer sits a local variable checked against 0xdeadbeef, which normal execution never sets. We overflow the buffer to plant that value ourselves and reach the shell() function.
+lab02 is the Memory Corruption lab, and this is its entry tier. Where lab01 was solved by reading and reversing the program’s logic, lab2C introduces the first actual bug: an unbounded `strcpy` that overflows a stack buffer. Just past that buffer sits a local variable checked against `0xdeadbeef`, which normal execution never sets. We overflow the buffer to plant that value ourselves and reach the `shell()` function.
 
 ## First look
  
