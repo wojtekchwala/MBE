@@ -55,14 +55,14 @@ Before the `scanf` and `system` calls, the code loads pointer values as their ar
 
 The scenery strings resolve to exactly that, a separator banner:
 
-```
+```asm
 gdb-peda$ x/s 0x80487d0
 0x80487d0:	'-' <repeats 29 times>
 ```
 
 The scanf format string is the one that determines whether our input is decimal or hex:
 
-```
+```asm
 gdb-peda$ x/s 0x8048818
 0x8048818:	"%d"
 ```
@@ -71,7 +71,7 @@ gdb-peda$ x/s 0x8048818
 
 The `system` argument is the payload of the whole level:
 
-```
+```asm
 gdb-peda$ x/s 0x804882b
 0x804882b:	"/bin/sh"
 ```
@@ -80,7 +80,7 @@ The win path runs `system("/bin/sh")`. Because the binary is SUID `lab1B`, that 
 
 The comparison value 0x149a is written in hex, but the "%d" format means our input is read as decimal. The two are the same number in different bases, so we need the decimal form to type. p/d prints a value in decimal:
 
-```
+```asm
 gdb-peda$ p/d 0x149a
 $1 = 5274
 ```
