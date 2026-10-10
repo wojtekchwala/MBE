@@ -113,3 +113,25 @@ The two chunks of magic arithmetic (`mul 0x88233b2b` then `shr`, and `imul ...,0
 ## Analysis
  
 The serial is not stored anywhere. It is computed from the username at runtime: seed `chk = (username[3] ^ 0x1337) + 0x5EEDED`, then for each byte `chk += (username[i] ^ chk) % 1337`. A valid serial is whatever `chk` ends up being for the username you supply. There are two ways to get it.
+
+**The static route (keygen).** Reimplement the checksum in Python and compute the serial offline for any username. This is faithful to the algorithm, but it also means porting the exact unsigned arithmetic and the magic-division semantics correctly.
+
+**The dynamic route (let the program compute it).** The binary already computes the correct `chk` for our username. If we can read `chk` out of memory at the moment of the compare, we do not need to reimplement anything. The only obstacle is the `ptrace` anti-debug, which is trivially defeated from inside the debugger by overwriting `ptrace`'s return value.
+
+We take the dynamic route.
+
+## Exploitation
+
+Two breakpoints. The first sits just after the `ptrace` call and forces its return value to 0, so the `-1` tamper path is never taken. The second sits at the `serial == chk` compare, where we read the computed checksum:
+
+![](./img/setting_breakpoints_1A.png)
+
+At the first prompt we enter a username (here wojtek, which satisfies len >= 6) and any placeholder serial. Execution stops at the second breakpoint, and chk is the dword at ebp-0x10:
+
+![](./img/valid_serial_1A.png)
+
+So for username wojtek the valid serial is 6232799. Running the binary normally (no debugger, so the anti-debug passes on its own) and entering that pair authenticates and drops a shell as lab1end:
+
+![](./img/solved_1A.png)
+
+Flag: `1uCKy_Gue55`
