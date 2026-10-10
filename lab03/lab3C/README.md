@@ -95,3 +95,22 @@ Entered as the password, with `rpisec` given as the username to clear the gate, 
 ![](./img/frame_3C.png)
 
 The read is worth being precise about, because it tells us which frame the bug lives in. `eip` is a healthy address inside `main`, and only the **saved** `eip` reads `0x62626262`, which is our four `b` bytes. If the overflow had sat in a buffer inside the password-checking helper and clobbered that helper's saved return, the helper's `ret` would already have jumped into our bytes and `eip` would read `0x62626262`, not a clean `main` address. It did not. The helper returned cleanly into `main`, and the corrupted slot belongs to **`main`'s** frame. The password therefore reads into a buffer in `main`, and the slot we control is `main`'s saved return address at `0xbffff6fc`.
+
+## The bug
+ 
+The password read writes past the end of its stack buffer in `main` with no bound that stops it before the saved return address. Eighty bytes of input reach the four bytes of the saved `eip`, and the next four overwrite it with whatever we choose. The `Saved registers` line gives the exact slot, and the geometry follows from it:
+
+```
+buffer start   0xbffff6ac      ( = 0xbffff6fc - 0x50 )
+saved ebp      0xbffff6f8       offset 76
+saved eip      0xbffff6fc       offset 80   <- control
+frame top      0xbffff700
+```
+ 
+So the payload shape is fixed:
+ 
+```
+[ 80 bytes filler ][ 4 bytes saved EIP ]
+```
+
+Saved `ebp` at offset 76 is also overwritten, which is harmless here. `main` never returns normally in our run, so a corrupted `ebp` costs us nothing.
