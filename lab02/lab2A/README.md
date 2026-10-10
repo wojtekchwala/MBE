@@ -165,10 +165,10 @@ The counter now reads `0x00414142`, far above the loop’s limit of ten. The con
 Each line on stdin is one word, and only its first byte is written to the advancing cursor. That gives a direct layout:
 
 ```
-line 1       14 chars    long enough to blow up i; first byte is filler
-lines 2-24   1 char      filler, walking the cursor up to the return address
-lines 25-28  1 byte      \xfd \x86 \x04 \x08   (shell, little-endian)
-line 29      empty       first byte 0x0a -> breaks the loop -> leave; ret -> shell
+line 1       14 chars    reaches byte twelve and corrupts i, first written byte is filler
+lines 2-24   1 char      filler, advancing the cursor toward the return address
+lines 25-28  1 byte      \xfd \x86 \x04 \x08   (shell address, little-endian)
+line 29      empty       first byte 0x0a takes the break path, then leave and ret into shell
 ```
 
 Writes 25 to 28 land on `ebp+0x4` and overwrite the saved return address with `0x080486fd`.
