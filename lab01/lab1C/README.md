@@ -84,3 +84,7 @@ The comparison value 0x149a is written in hex, but the "%d" format means our inp
 gdb-peda$ p/d 0x149a
 $1 = 5274
 ```
+
+Entering `5274` passes the check and `system("/bin/sh")` drops us into a shell. The `id` output confirms the escalation: our real UID is still `lab1C`, but the effective UID is `lab1B`. That raised euid is what lets the shell read `/home/lab1B/.pass`, a file `lab1C` has no access to.
+
+![](./img/solved.png)
