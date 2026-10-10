@@ -29,22 +29,22 @@ We load the binary in GDB and disassemble `main`. Since the program's whole logi
 
 ![](./img/disassemble_main.png)
 
-The relevant block (AT&T syntax):
+The relevant block:
 ```asm
-0x080486e6 <+57>:  lea    0x1c(%esp),%eax      ; eax = &buf  (buf at esp+0x1c)
-0x080486ea <+61>:  mov    %eax,0x4(%esp)       ; scanf arg2 = &buf
-0x080486ee <+65>:  movl   $0x8048818,(%esp)    ; scanf arg1 = format string ptr
-0x080486f5 <+72>:  call   __isoc99_scanf       ; scanf(fmt, &buf)
-0x080486fa <+77>:  mov    0x1c(%esp),%eax      ; eax = buf (the value we typed)
-0x080486fe <+81>:  cmp    $0x149a,%eax         ; compare against 0x149a
-0x08048703 <+86>:  jne    0x8048724 <main+119> ; mismatch -> failure branch
-0x08048705 <+88>:  movl   $0x804881b,(%esp)    ; "Authenticated!" (puts)
-0x0804870c <+95>:  call   <puts@plt>
-0x08048711 <+100>: movl   $0x804882b,(%esp)    ; system arg1 = command ptr
-0x08048718 <+107>: call   <system@plt>         ; system(<cmd>)
+0x080486e6 <+57>:  lea    eax,[esp+0x1c]              ; eax = &buf  (buf at esp+0x1c)
+0x080486ea <+61>:  mov    DWORD PTR [esp+0x4],eax     ; scanf arg2 = &buf
+0x080486ee <+65>:  mov    DWORD PTR [esp],0x8048818   ; scanf arg1 = format string ptr
+0x080486f5 <+72>:  call   0x80485a0 <__isoc99_scanf@plt>
+0x080486fa <+77>:  mov    eax,DWORD PTR [esp+0x1c]    ; eax = buf (the value we typed)
+0x080486fe <+81>:  cmp    eax,0x149a                 ; compare against 0x149a
+0x08048703 <+86>:  jne    0x8048724 <main+119>       ; mismatch -> failure branch
+0x08048705 <+88>:  mov    DWORD PTR [esp],0x804881b   ; "Authenticated!" (puts)
+0x0804870c <+95>:  call   0x8048560 <puts@plt>
+0x08048711 <+100>: mov    DWORD PTR [esp],0x804882b   ; system arg1 = command ptr
+0x08048718 <+107>: call   0x8048570 <system@plt>      ; system(<cmd>)
 ...
-0x08048724 <+119>: movl   $0x8048833,(%esp)    ; failure message (puts)
-0x0804872b <+126>: call   <puts@plt>
+0x08048724 <+119>: mov    DWORD PTR [esp],0x8048833   ; failure message (puts)
+0x0804872b <+126>: call   0x8048560 <puts@plt>
 ```
 
 The program reads one integer, compares it to `0x149a`, and if they match it calls system() on a hardcoded string. Otherwise it prints a failure message and exits.
