@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 470" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+  <rect x="0" y="0" width="860" height="470" rx="10" fill="#0d1117"/>
+
+  <!-- title -->
+  <text x="40" y="42" fill="#e6edf3" font-size="19" font-weight="700">lab2A stack frame: the counter lives inside the input buffer</text>
+  <text x="40" y="66" fill="#6e7681" font-size="12.5">low address at top, high address at bottom</text>
+
+  <!-- ===== fgets buffer (tall box) ===== -->
+  <rect x="200" y="86" width="240" height="128" rx="6" fill="#161b22" stroke="#30363d"/>
+  <!-- counter band inside the buffer -->
+  <rect x="200" y="182" width="240" height="32" rx="0" fill="#2a2113" stroke="#d29922" stroke-width="1.5"/>
+  <text x="320" y="130" fill="#8b949e" font-size="13" text-anchor="middle">input buffer</text>
+  <text x="320" y="150" fill="#6e7681" font-size="12" text-anchor="middle">fgets(buf, 16), 16 bytes</text>
+  <text x="320" y="202" fill="#d29922" font-size="12.5" text-anchor="middle" font-weight="700">loop counter  i</text>
+  <text x="120" y="100" fill="#58a6ff" font-size="12">ebp-0x28</text>
+  <text x="120" y="202" fill="#58a6ff" font-size="12">ebp-0x1c</text>
+
+  <!-- right annotations for buffer + counter -->
+  <text x="470" y="128" fill="#6e7681" font-size="12.5">fgets is bounded, so the word itself</text>
+  <text x="470" y="146" fill="#6e7681" font-size="12.5">cannot overflow. No classic overflow here.</text>
+  <text x="470" y="192" fill="#e6edf3" font-size="12.5">but i sits at offset 12 of that buffer,</text>
+  <text x="470" y="210" fill="#d29922" font-size="12.5">so a long word overwrites it and lifts the</text>
+  <text x="470" y="228" fill="#d29922" font-size="12.5">10-iteration cap. this is the bug.</text>
+
+  <!-- ===== cursor pointer ===== -->
+  <rect x="200" y="222" width="240" height="30" rx="6" fill="#161b22" stroke="#30363d"/>
+  <text x="320" y="242" fill="#8b949e" font-size="12.5" text-anchor="middle">write cursor (pointer)</text>
+  <text x="120" y="242" fill="#58a6ff" font-size="12">ebp-0x18</text>
+
+  <!-- ===== result area (cursor start) ===== -->
+  <rect x="200" y="258" width="240" height="30" rx="6" fill="#161b22" stroke="#30363d"/>
+  <text x="320" y="278" fill="#c9d1d9" font-size="12.5" text-anchor="middle">result area, cursor starts here</text>
+  <text x="120" y="278" fill="#58a6ff" font-size="12">ebp-0x14</text>
+
+  <!-- ===== gap ===== -->
+  <rect x="200" y="294" width="240" height="30" rx="6" fill="#0d1117" stroke="#21262d" stroke-dasharray="4 3"/>
+  <text x="320" y="314" fill="#6e7681" font-size="12" text-anchor="middle">. . . one byte written per word . . .</text>
+
+  <!-- ===== saved ebp ===== -->
+  <rect x="200" y="330" width="240" height="30" rx="6" fill="#161b22" stroke="#30363d"/>
+  <text x="320" y="350" fill="#8b949e" font-size="12.5" text-anchor="middle">saved ebp</text>
+  <text x="120" y="350" fill="#58a6ff" font-size="12">ebp+0x00</text>
+
+  <!-- ===== return address (target) ===== -->
+  <rect x="200" y="366" width="240" height="34" rx="6" fill="#132a18" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="320" y="388" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="700">saved return address</text>
+  <text x="120" y="388" fill="#58a6ff" font-size="12">ebp+0x04</text>
+
+  <!-- cursor-walk arrow (result -> return addr) -->
+  <line x1="454" y1="273" x2="454" y2="383" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arr)"/>
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
+      <path d="M0 0 L9 4.5 L0 9 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+  <text x="470" y="300" fill="#e6edf3" font-size="12.5">with the loop extended, the cursor</text>
+  <text x="470" y="318" fill="#e6edf3" font-size="12.5">walks 24 bytes up to the return address</text>
+  <text x="470" y="384" fill="#3fb950" font-size="12.5">overwrite with shell()  0x080486fd</text>
+</svg>
