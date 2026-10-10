@@ -113,7 +113,7 @@ Unlike lab2C there is no flag variable to flip and no `shell()` call in `main`, 
 
 ## Finding the win target
 
-Listing the binary's functions shows one that `main` never calls:
+We control where `print_name` returns, so we need a worthwhile address to send it to. The simplest candidates are the binary’s own functions, since their addresses are fixed and known. Listing them shows one that `main` never calls:
 
 ![](./img/info_functions_2B.png)
 
