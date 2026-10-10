@@ -60,4 +60,34 @@ The relevant block:
 
 ## Disassembling `print_name`
 
+This is where the work happens. `print_name` takes the argument `main` passed it, copies it into a local buffer, and prints it back. The two calls to watch are the `strcpy` that does the copy and the `printf` that produces the `Hello %s` output we saw earlier.
+
 ![](./img/disassemble_print_name_2B.png)
+
+The relevant block:
+ 
+```asm
+0x080486d3 <+3>:   sub    esp,0x28                 ; frame
+0x080486d6 <+6>:   mov    eax,DWORD PTR [ebp+0x8]  ; input (argv[1])
+0x080486d9 <+9>:   mov    DWORD PTR [esp+0x4],eax  ; strcpy src = input
+0x080486dd <+13>:  lea    eax,[ebp-0x17]           ; strcpy dest = ebp-0x17 (buf)
+0x080486e0 <+16>:  mov    DWORD PTR [esp],eax
+0x080486e3 <+19>:  call   0x8048580 <strcpy@plt>   ; strcpy(buf, input)  -- no bound
+0x080486e8 <+24>:  lea    eax,[ebp-0x17]
+0x080486ef <+31>:  mov    DWORD PTR [esp],0x80487d8 ; "Hello %s\n"
+0x080486f6 <+38>:  call   0x8048570 <printf@plt>   ; printf("Hello %s", buf)
+0x080486fb <+43>:  leave
+0x080486fc <+44>:  ret
+```
+
+## The bug
+
+`print_name` copies its argument into a buffer at `ebp-0x17` with `strcpy` and no length check, so a long argument writes past the end of the buffer. There is no stack canary (the function has no `gs:0x14` guard and no `__stack_chk_fail` call), so nothing sits between the buffer and the saved registers to detect the overflow. The buffer is close to the top of the frame, so writing far enough reaches the saved return address at `ebp+0x4`. That gives us control of the instruction pointer when `print_name` returns.
+
+> Unlike lab2C there is no flag variable to overwrite and no `shell()` call in `main`, so flipping a local value is not enough here. We need something to point the return address at.
+
+## Finding the win target
+
+Listing the binary's functions shows one that `main` never calls:
+
+![](./img/info_functions_2B.png)
