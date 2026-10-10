@@ -33,6 +33,22 @@ Password:
 
 We load the binary in GDB and disassemble main. Unlike `lab1C`, the logic does not stay in one function. `main` only reads our input and hands it off, so we follow the calls it makes into `test` and then `decrypt`, where the real check lives.
 
-![](./img/disassemble_main_lab1B.png)
+![](./img/disassemble_main_1B.png)
+
+The relevant block (Intel syntax):
+
+```asm
+0x08048bfd <+25>:  call   time@plt            ; time(NULL)
+0x08048c05 <+33>:  call   srand@plt           ; srand(time(NULL))  seeds the RNG
+...                                            ; banner + "Password: " prompt (puts/printf)
+0x08048c3a <+86>:  lea    eax,[esp+0x1c]       ; eax = &input
+0x08048c3e <+90>:  mov    [esp+0x4],eax        ; scanf arg2 = &input
+0x08048c42 <+94>:  mov    [esp],0x8048dee      ; scanf arg1 = format string ptr
+0x08048c49 <+101>: call   __isoc99_scanf       ; scanf("%d", &input)
+0x08048c4e <+106>: mov    eax,[esp+0x1c]       ; eax = input
+0x08048c52 <+110>: mov    [esp+0x4],0x1337d00d ; test arg2 = secret
+0x08048c5a <+118>: mov    [esp],eax            ; test arg1 = input
+0x08048c5d <+121>: call   test                 ; test(input, 0x1337d00d)
+```
 
 Shows scanf("%d", &input) then test(input, 0x1337d00d). Confirm the format string that main passes to scanf:
