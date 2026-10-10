@@ -2,7 +2,7 @@
 
 My solutions and notes for RPISEC's Modern Binary Exploitation course (CSCI 4968), taught at Rensselaer Polytechnic Institute in Spring 2015 and open-sourced as one of the canonical free resources for learning memory-corruption exploitation from the ground up.
 
-This repo holds my exploit scripts and writeups for the Warzone challenges, organized per lab. The original course materials - lectures, lab sources, and binaries — live in the RPISEC/MBE repo
+This repo holds my exploit scripts and writeups for the Warzone challenges, organized per lab. The original course materials - lectures, lab sources, and binaries - live in the RPISEC/MBE repo
 
 ## Challenges
  
