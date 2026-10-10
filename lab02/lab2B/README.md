@@ -164,4 +164,16 @@ distance       = 0x17 + 0x04 = 0x1b = 27 bytes
 
 So 27 bytes of filler reach the saved return address, and the next 4 bytes become the new return target.
 
-Rather than trust the frame arithmetic, confirm it with a cyclic pattern. Generate a non-repeating sequence, run with it as the argument, and let the program crash on `ret` with pattern bytes in `EIP`:
+The arithmetic gives `27`, but it is easy to miscount by hand. There is a cleaner way: let the program tell us the offset itself. A cyclic pattern is a sequence where every four-byte window is unique, so any four bytes that end up in a register trace back to exactly one position in the input.
+
+We feed one in as the argument. When `print_name` returns, the four bytes in the return-address slot are loaded into `EIP` and the program crashes trying to execute them. Because those bytes are unique, we can ask where in the pattern they came from:
+
+![](./img/program_crash_2B.png)
+
+The value that landed in `EIP` came from offset 27 in the pattern, so 27 bytes of input reach the return address. The program measured its own offset for us.
+
+![](./img/offset_measure_2B.png)
+
+## Exploitation
+
+Because `shell` takes an argument, the overwrite is not a bare "return to `shell`". We have to hand `shell` an argument the way a normal caller would, by laying out a small fake frame past the return address.
