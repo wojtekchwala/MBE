@@ -93,3 +93,5 @@ We send eighty filler bytes followed by a four-byte marker:
 Entered as the password, with `rpisec` given as the username to clear the gate, this is the frame one step before `main` returns:
 
 ![](./img/frame_3C.png)
+
+The read is worth being precise about, because it tells us which frame the bug lives in. `eip` is a healthy address inside `main`, and only the **saved** `eip` reads `0x62626262`, which is our four `b` bytes. If the overflow had sat in a buffer inside the password-checking helper and clobbered that helper's saved return, the helper's `ret` would already have jumped into our bytes and `eip` would read `0x62626262`, not a clean `main` address. It did not. The helper returned cleanly into `main`, and the corrupted slot belongs to **`main`'s** frame. The password therefore reads into a buffer in `main`, and the slot we control is `main`'s saved return address at `0xbffff6fc`.
