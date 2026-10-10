@@ -52,3 +52,8 @@ The relevant block (Intel syntax):
 ```
 
 Shows scanf("%d", &input) then test(input, 0x1337d00d). Confirm the format string that main passes to scanf:
+
+```asm
+gdb-peda$ x/s 0x8048dee
+0x8048dee:	"%d"
+```
