@@ -6,9 +6,9 @@ The original course materials (lectures, lab sources, and the Warzone VM) live i
 
 For me, this course has immense value, and I'm grateful to RPISEC for making it open source. Thank you! 
 
-I hope my walkthroughs give something back to the community, in return for a great course that teaches the art of exploitation.
-
 I'm also very grateful to my senior colleagues who pointed me to this course (especially Maciej), and to everyone who taught me binary exploitation craft along the way.
+
+I hope my walkthroughs give something back to the community in return.
 
 ## Challenges
  
