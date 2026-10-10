@@ -91,3 +91,7 @@ The relevant block:
 Listing the binary's functions shows one that `main` never calls:
 
 ![](./img/info_functions_2B.png)
+
+`shell` is present but unreferenced by the normal control flow, which is the giveaway that it is the intended target. Disassembling it:
+
+![](./img/disassemble_shell_2B.png)
