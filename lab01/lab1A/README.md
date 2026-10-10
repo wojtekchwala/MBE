@@ -130,7 +130,7 @@ At the first prompt we enter a username (here wojtek, which satisfies len >= 6) 
 
 ![](./img/valid_serial_1A.png)
 
-So for username wojtek the valid serial is 6232799. Running the binary normally (no debugger, so the anti-debug passes on its own) and entering that pair authenticates and drops a shell as lab1end:
+So for username `wojtek` the valid serial is `6232799`. Running the binary normally (no debugger, so the anti-debug passes on its own) and entering that pair authenticates and drops a shell as lab1end:
 
 ![](./img/solved_1A.png)
 
