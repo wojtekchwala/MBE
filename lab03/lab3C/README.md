@@ -67,3 +67,29 @@ nope, incorrect username...
 0x0804886e <+222>: lea    esp,[ebp-0x8]
 0x08048874 <+228>: ret                                ; returns into the overwritten saved EIP
 ```
+
+Arguments to a `cdecl` call are laid out at the top of the frame, so `[esp]`, `[esp+0x4]`, and `[esp+0x8]` are the first, second, and third arguments to `strncmp`. Reading them off, the call is `strncmp(0x8049c40, 0x8048928, 6)`. 
+
+The expected string confirms what we are matching against:
+
+```
+gdb-peda$ x/s 0x8048928
+0x8048928:  "rpisec"
+```
+
+Two facts fall out, and both feed the exploit later. First, the username only has to match in its first six bytes, because the length is capped at `6`. Second, the name is compared at the **global** address `0x8049c40`, not on the stack. Nothing in this function reads the name, so the read happens elsewhere, into that global. A fixed, non-stack address that we can write into is worth remembering, because with PIE off it is identical on every run and under the debugger.
+ 
+## The password overflow
+ 
+The password read is the vulnerable one. We confirm control directly rather than infer it, by sending a marked payload and reading the frame back.
+ 
+We send eighty filler bytes followed by a four-byte marker:
+
+```python
+>>> 'a'*80 + 'b'*4
+'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb'
+```
+
+Entered as the password, with `rpisec` given as the username to clear the gate, this is the frame one step before `main` returns:
+
+![](./img/frame_3C.png)
