@@ -60,7 +60,7 @@ The relevant block:
 
 ## Disassembling `print_name`
 
-This is where the work happens. `print_name` takes the argument `main` passed it, copies it into a local buffer, and prints it back. The two calls to watch are the `strcpy` that does the copy and the `printf` that produces the `Hello %s` output we saw earlier.
+This is where the work happens. `print_name` takes the argument `main` passed it, copies it into a local buffer with `strcpy`, and prints it back with `printf`. The `strcpy` is the one to watch, since it is where the bug is.
 
 ![](./img/disassemble_print_name_2B.png)
 
@@ -107,9 +107,9 @@ ebp-0x17  ->  the strcpy buffer
 
 ## The bug
 
-`print_name` copies its argument into a buffer at `ebp-0x17` with `strcpy` and no length check, so a long argument writes past the end of the buffer. There is no stack canary (the function has no `gs:0x14` guard and no `__stack_chk_fail` call), so nothing sits between the buffer and the saved registers to detect the overflow. The buffer is close to the top of the frame, so writing far enough reaches the saved return address at `ebp+0x4`. That gives us control of the instruction pointer when `print_name` returns.
-
-> Unlike lab2C there is no flag variable to overwrite and no `shell()` call in `main`, so flipping a local value is not enough here. We need something to point the return address at.
+There is no stack canary here. `print_name` has no `gs:0x14` guard and no `__stack_chk_fail` call, so nothing sits between the buffer and the saved registers to detect the overwrite. Controlling the saved return address gives us the instruction pointer when `print_name` returns.
+ 
+Unlike lab2C there is no flag variable to flip and no `shell()` call in `main`, so we need something to point the return address at.
 
 ## Finding the win target
 
