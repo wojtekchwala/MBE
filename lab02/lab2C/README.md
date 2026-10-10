@@ -86,3 +86,5 @@ Payload:
 The input is a command-line argument, and it contains non-printable bytes, so we build it with Python inline:
 
 ![](./img/solved_2C.png)
+
+Flag: `1m_all_ab0ut_d4t_b33f`
