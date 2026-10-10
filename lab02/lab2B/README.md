@@ -15,17 +15,17 @@ An unbounded `strcpy` in `print_name` overflows a small stack buffer, and this t
 
 ## First look
 
-Logged in as `lab2B` (via the password recovered from `lab2C`), read the target's permissions:
+Logged in as `lab2B` (via the password recovered from `lab2C`), the first thing we look at is the target’s permissions:
 
 ![](./img/ls_lab2B.png)
 
 As with the earlier tiers, the binary is `setuid` and owned by the next user up, `lab2A`.
  
-Before reading any code, check the mitigation posture with `checksec`.
+Before reading any code, we check the mitigation posture with `checksec`.
 
 ![](./img/checksec_2B.png)
 
-Run it blind to see the surface:
+Running it blind to see the surface:
 
 ![](./img/running_lab2B.png)
 
@@ -163,3 +163,5 @@ distance       = 0x17 + 0x04 = 0x1b = 27 bytes
 ```
 
 So 27 bytes of filler reach the saved return address, and the next 4 bytes become the new return target.
+
+Rather than trust the frame arithmetic, confirm it with a cyclic pattern. Generate a non-repeating sequence, run with it as the argument, and let the program crash on `ret` with pattern bytes in `EIP`:
