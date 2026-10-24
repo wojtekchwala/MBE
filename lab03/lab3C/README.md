@@ -4,9 +4,12 @@
 | --- | --- |
 | **Lab** | 03 · Shellcoding |
 | **Tier** | C (entry) |
-| **Target** | `/levels/lab03/lab3C` |
-| **Class** | stack buffer overflow (return-address overwrite into injected shellcode) |
-| **Goal** | run injected shellcode as the setuid owner and retrieve the .pass for lab3C |
+| **Target** | `/levels/lab03/lab3C` (ELF32, Intel 80386, non-PIE) |
+| **Class** | Stack-based buffer overflow |
+| **Root cause** | `fgets` called with a length argument (100) larger than its 64-byte destination buffer |
+| **Impact** | Saved return-address overwrite → arbitrary code execution as lab3B |
+| **Goal** | run injected shellcode as the setuid owner and retrieve the .pass for `lab3C` |
+| **Difficulty** | Low (no stack canary, NX, PIE, or ASLR) |
 
 
 ## Overview
