@@ -24,6 +24,8 @@ Logged in as `lab3C`, the first thing we look at is the target's permissions:
 
 The s in the mode string `-r-sr-x---` is the `setuid` bit, and the owner is `lab3B`, so any code the program runs executes with `lab3B`'s effective `uid`.
 
+We check the mitigation posture with checksec:
+
 ![](./img/checksec_3C.png)
 
 Everything is off. `NX` disabled makes the stack executable, so injected shellcode runs. `CANARY` disabled leaves nothing between the buffer and the saved return address, so the offset is just buffer-to-EIP. `PIE` disabled keeps addresses fixed, which we rely on when choosing where to jump.
