@@ -208,6 +208,8 @@ Assembled:
 
 When the child's `main` returns, control lands on the gadget, the gadget jumps into `esp`, and `esp` points at the shellcode. The stub reads the flag file and writes it to stdout, then exits cleanly, so the parent's `wait` returns normally and no forbidden syscall is attempted. The trailing `0x0a` is the newline that terminates `gets`, and it is the only `0x0a` anywhere in the input.
 
+The three lines are the success state in full. The banner is the child's `puts` before `gets`. The second line is the flag, written to stdout by the shellcode's `write` under `lab3A`'s euid. The third is the parent's own `puts`, reached down the `WIFEXITED` path because the child exited on its own, after the flag had already left. The flag value is the point of the tier. There is no shell here, the escalation is a file read, performed by the payload rather than handed up through `execve`.
+
 ![](./img/solution_3B.png)
 
 FLAG: `wh0_n33ds_5h3ll3_wh3n_U_h4z_s4nd`
