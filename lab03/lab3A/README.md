@@ -51,4 +51,40 @@ Input command: read
 
 ## Disassembling `main`
 
+`main` reserves a large frame and zeroes a data array near the bottom of it:
+
 ![](./img/disassemble_main_3A.png)
+
+```asm
+0x08048a17 <+5>:   and    esp,0xfffffff0
+0x08048a1a <+8>:   sub    esp,0x1c0                 ; reserve the frame
+0x08048a62 <+80>:  lea    ebx,[esp+0x18]            ; &data
+0x08048a6b <+89>:  mov    edx,0x64                  ; 0x64 = 100 dwords
+0x08048a74 <+98>:  rep stos DWORD PTR es:[edi],eax  ; zero data[0..99], eax = 0
+```
+
+The `rep stos` writes `0x64` (100) zero dwords starting at `[esp+0x18]`, so `data` is a 100-entry array of 4-byte integers, 400 bytes, living on the stack.
+
+Before it serves a single command, `main` scrubs the process arguments and environment. It walks `argv` and then `envp` and zeroes every string it finds:
+
+```asm
+; walk argv at [ebp+0xc], zero each string
+0x08048a80 <+110>: call   strlen@plt
+0x08048a99 <+135>: call   memset@plt               ; memset(argv[i], 0, len)
+; then the same walk over envp at [ebp+0x10]
+0x08048ace <+188>: call   memset@plt               ; memset(envp[i], 0, len)
+```
+
+This is deliberate hardening, and it is worth naming because it removes an avenue the earlier tiers left open. Stashing a shellcode stub in an environment variable and returning to it is a standard move, and `main` closes it by overwriting `argv` and `envp` with zeroes at startup. Whatever code this exploit injects has to live somewhere `main` does not scrub.
+
+The rest of `main` is a command loop. It reads a command, compares it against three keywords, and dispatches:
+
+```asm
+0x08048b14 <+258>: lea    eax,[esp+0x1a8]
+0x08048b1e <+268>: call   fgets@plt                 ; fgets(cmd, 0x14, stdin), 20 bytes
+0x08048b57 <+325>: call   strncmp@plt               ; compare against "store"
+0x08048b5e <+332>: jne    main+355
+0x08048b60 <+334>: lea    eax,[esp+0x18]            ; &data
+0x08048b67 <+341>: call   store_number             ; store_number(&data)
+0x08048b9f <+397>: call   read_number              ; read_number(&data), on the "read" branch
+```
