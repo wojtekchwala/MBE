@@ -13,6 +13,8 @@
 
 ## Overview
 
+lab03 is the Shellcoding lab, and this is its middle tier. lab3C cleared NX and let us supply our own code, a short `execve("/bin/sh")` stub reached by overwriting the saved return address. lab3B keeps that setup and adds a watcher. `main` forks before it reads our input, the child runs our code, and the parent traces the child through `ptrace` and kills it the moment it attempts `execve`. The password read is now `gets`, which takes no length argument at all, so the overflow is unbounded by construction rather than merely larger than the buffer, and with no canary in the way it reaches the saved return address directly. NX is still off, so injected bytes still run, but the `execve` that lab3C relied on is exactly what the parent kills on. The shellcode therefore cannot spawn a shell. It has to read `/home/lab3A/.pass` and print it directly, under the `lab3A` euid the child already holds, using `open`, `read`, `write`, and `exit`, none of which the guard inspects. Control reaches that stub on the stack through a `jmp esp` gadget rather than a hardcoded stack address.
+
 ## First look
 
 Logged in as `lab3B`, the first thing we look at is the target's permissions:
