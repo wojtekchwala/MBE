@@ -51,4 +51,24 @@ child is exiting...
  
 `fork` returns `0` in the child and the child's pid in the parent, so the child takes the `+75` path and the parent takes `+160`.
 
+The child path sets up the trace relationship, prints the banner, and reads our line:
 
+```asm
+0x08048a0d <+126>: call   ptrace@plt                   ; ptrace(PTRACE_TRACEME, 0, 0, 0)
+0x08048a12 <+131>: mov    DWORD PTR [esp],0x8048b84    ; "just give me some shellcode, k"
+0x08048a19 <+138>: call   puts@plt
+0x08048a1e <+143>: lea    eax,[esp+0x20]               ; &buf
+0x08048a22 <+147>: mov    DWORD PTR [esp],eax
+0x08048a25 <+150>: call   gets@plt                     ; gets(buf), unbounded read, the bug
+0x08048a2a <+155>: jmp    main+339                     ; fall to the shared epilogue and return
+```
+
+The constant moved into the puts argument slot at +131 is a pointer, not the text itself. Resolving it as a string shows the banner we already saw on the blind run:
+
+`ptrace(PTRACE_TRACEME)` asks the parent to become the child's tracer. The buffer sits at `[esp+0x20]`, it is 128 bytes, and `gets` writes into it with no length. The read ends only at a newline, so everything we send up to that newline lands in the frame, past the buffer and over the saved return address. The child then jumps to the shared epilogue and returns through the address we now control.
+
+![](./img/puts_string_3B.png)
+
+So `+131` and `+138` together are `puts("just give me some shellcode, k")`. The `mov` loads the argument at `[esp]`, which is where the 32-bit cdecl convention passes the first argument, and the `call` consumes it. The same reading applies to `+143` through `+150`. `lea eax,[esp+0x20]` computes the address of the 128-byte input buffer, the `mov` places that address in the argument slot, and `gets` reads into it. `ptrace(PTRACE_TRACEME)` above them asks the parent to become the child's tracer. `gets` takes no length, so the read ends only at a newline, and everything we send up to that newline lands in the frame, past the buffer and over the saved return address. The child then jumps to the shared epilogue and returns through the address we now control.
+ 
+The parent path is a watch loop. It waits for the child to change state, and the status word decides what happens next:
