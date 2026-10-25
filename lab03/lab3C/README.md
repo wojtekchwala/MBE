@@ -166,6 +166,6 @@ password:  "A" * 80 + \x46\x9c\x04\x08      ; saved EIP -> 0x8049c46
 
 Two details of the output look like failure and are not. The program prints `nope, incorrect password...` before the shell appears, because the overflow happens at the password `fgets`, before `verify_user_pass` runs. The check still executes against our filler, fails, and prints its message, and only then does `main` reach `ret` and jump into the stub. The message is normal output, not a failed exploit. And the spawned `sh` has no prompt, because stdin is the pipe rather than a terminal, so it runs non-interactively. Commands still execute:
 
-![](./img/solved_2C.png)
+![](./img/solved_3C.png)
 
 Flag: `th3r3_iz_n0_4dm1ns_0n1y_U!`
