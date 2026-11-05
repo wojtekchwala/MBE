@@ -88,3 +88,70 @@ The rest of `main` is a command loop. It reads a command, compares it against th
 0x08048b67 <+341>: call   store_number             ; store_number(&data)
 0x08048b9f <+397>: call   read_number              ; read_number(&data), on the "read" branch
 ```
+
+The command text is read into `[esp+0x1a8]`, a 20-byte buffer sitting just above the array, and matched against `store`, `read`, and `quit`. On `store` and on `read`, `main` loads the address of the array into `eax` and calls the helper. `quit` leaves the loop and `main` returns.
+
+So `main` never touches an index. It sets up the array, hardens the environment, and routes `store` and `read` to two helpers, handing each the base of `data`. The user-supplied index, the arithmetic applied to it, and any bounds check all live in `store_number` (`0x8048917`) and `read_number` (`0x80489c2`). Those two functions are where the bug is.
+
+## The bug
+
+`store_number` and `read_number` each receive the array base in `eax`, read a user-supplied index, and access `data[index]`. Neither checks that the index is less than 100, and the index is an `unsigned int`, so there is no negative-index rejection either. An index beyond the array simply computes `base + index*4` and reads or writes there. Because `data` lives on the stack, that is an arbitrary relative read and an arbitrary relative write into `main`'s stack frame and everything above it.
+
+`read_number` applies no filter at all. It reads `data[index]` and prints it, which is a clean arbitrary read.
+
+`store_number` writes `data[index] = value`, but gates the write on two conditions. The index may not be a multiple of three, and the value may not have `0xb7` as its most significant byte. Expressed as the rejection test:
+
+```c
+if (index % 3 == 0 || (value >> 24) == 0xb7)
+    reject;
+```
+
+Neither condition restricts the index to the array's declared bounds, so both are a weak blacklist layered on top of a primitive that is already out of bounds. They shape the payload rather than prevent it, and the next sections take each in turn.
+
+## Locating the saved return address
+
+The target of the write is `main`'s saved return address, addressed as an index into `data`. From the disassembly, `data` begins at `esp+0x18` after `sub esp,0x1c0`, and the saved return address sits at `ebp+4`. Accounting for the prologue (`push ebp; mov ebp,esp; push edi; push ebx; and esp,0xfffffff0; sub esp,0x1c0`), the saved return address is `436` bytes above the start of the array when the alignment discards zero bytes. `data` is an array of 4-byte integers, so `store` places `data[i]` at `&data + 4*i`, and the index that lands on the saved return address is `436 / 4 = 109`.
+
+So the saved return address is `data[109]`, and the index is convenient by design. `109 % 3 == 1`, so the index filter does not block it, and the slot is writable.
+
+## The constraints the filters impose
+
+The two filters are not arbitrary, they steer the exploit.
+
+The `index % 3 == 0` rule forbids every third slot, so the shellcode cannot be written as one contiguous run. Writable indices come in adjacent pairs, `1,2` then `4,5` then `7,8`, each pair separated by one forbidden slot. A pair gives eight contiguous bytes. We lay the shellcode out one cell of eight bytes at a time, and end each cell with a two-byte short jump `\xeb\x04` (`jmp +4`) that hops over the four-byte forbidden slot and lands at the start of the next writable pair. The jumps stitch the cells into one continuous execution path across the holes the filter leaves.
+
+The `(value >> 24) == 0xb7` rule forbids any value whose top byte is `0xb7`. On this box libc maps at `0xb7xxxxxx`, so the filter blocks writing a libc address. That is a direct block on the obvious ret2libc, where you would write the address of `system` into the saved return slot. It does not block a stack address, which is `0xbfxxxxxx`, and it does not block the bytes of ordinary shellcode. Combined with the `argv`/`envp` scrub in `main`, the filter funnels the exploit toward one path: put the shellcode on the stack, in the data array itself, and return to it at a `0xbf` stack address that the filter permits.
+
+## Leaking the data address
+
+To return into the array we need its runtime address, and the stack address differs between a debugger run and a bare run because the environment block changes the stack base. Rather than read it under a debugger and guess the offset, we leak it from the program itself, using the arbitrary read that `read_number` hands us for free.
+ 
+`main` sets up each helper call with `lea eax,[esp+0x18]; mov [esp],eax; call store_number`, so the slot at `main`'s `esp` holds the value `&data`, 24 bytes below the array (`&data - 0x18`). Reading the index that maps to `&data - 24` returns `&data` itself. That index is `-6`, which as an unsigned value is `4294967290`:
+
+```
+read 4294967290   ->  data[-6]  =  *(&data - 24)  =  &data
+```
+ 
+`read_number` has no filter, so the large index is accepted, and the printed number is the array's own stack address. Because ASLR is off, the address is stable, so a value leaked from one run is valid for the next, with no debugger and no offset arithmetic.
+
+## Writing the shellcode
+
+The payload is a standard `execve("/bin/sh")` stub, laid out so that no single instruction straddles a forbidden slot. Each instruction occupies one eight-byte cell, padded with NOPs, ending in the `\xeb\x04` bridge jump:
+ 
+```asm
+xor eax, eax        ; 31 c0
+push eax            ; 50
+push 0x68732f2f     ; 68 2f 2f 73 68   "//sh"
+push 0x6e69622f     ; 68 2f 62 69 6e   "/bin"
+mov ebx, esp        ; 89 e3
+push eax            ; 50
+mov edx, esp        ; 89 e2
+push ebx            ; 53
+mov ecx, esp        ; 89 e1
+mov al, 0xb         ; b0 0b            __NR_execve
+int 0x80            ; cd 80
+```
+
+A short run of NOP-only cells sits in front of the stub as a landing sled, so the return address has a few bytes of tolerance. None of the eight-byte cells, packed as little-endian dwords, has `0xb7` as a top byte, so the value filter passes every store.
+ 
+The whole thing is written into the array with a sequence of `store` commands, two per cell, at the paired writable indices, and the saved return slot at `data[109]` is set to the address of the first cell. On `quit`, `main` returns into the sled, the sled falls through into the stub, and the stub runs `execve("/bin/sh")` under `lab3end`'s euid.
