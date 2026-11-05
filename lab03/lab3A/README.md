@@ -166,8 +166,21 @@ store (1,2)(4,5)(7,8)...        -> NOP sled, then the jump-stitched execve stub
 store 109 = <&data + sled>      -> saved return address points at the first sled cell
 quit                            -> main returns into the sled
 ```
-
 The leak at the top resolves `&data` for this run, and because ASLR is off the value is stable, so the address written into `data[109]` holds from one run to the next. On `quit`, `main` returns into the sled, the sled falls through into the `execve` stub, and the stub runs under lab3end's euid. id shows the euid transition the `-r-sr-x---` mode set up, with the real uid still `lab3A`, and `/home/lab3end/.pass` is then readable.
+
+The generator is written to a temp file with a quoted heredoc, which keeps the `\x..` escapes and `$` tokens in the Python untouched by the shell:
+
+![](./img/write_the_generator_into_G.png)
+
+`&data` is leaked with a single `read` command. Index `4294967290` is `-6` as an unsigned value, so `read_number` returns the pointer stored at `data[-6]`, which `main` left there as the call argument and is `&data` itself:
+
+![](./img/leak_data_3A.png)
+
+The leak prints `&data` in decimal as `3221222600`. In hexadecimal that is `0xbffff4c8`, the form the generator takes as its argument, where it becomes the return target written at `data[109]`. ASLR is off, so the address is stable across runs, and the value leaked here is still valid in the process the payload is piped into. The output is piped into a fresh process, with a trailing `cat` holding stdin open so the spawned shell keeps a live input:
+
+```bash
+lab3A@warzone:/levels/lab03$ (python2 "$G" 0xbffff4c8 ; cat) | ./lab3A
+```
 
 ![](./img/solution_3A.png)
 
