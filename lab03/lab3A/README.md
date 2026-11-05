@@ -5,11 +5,11 @@
 | **Lab** | 03 · Shellcoding |
 | **Tier** | A |
 | **Target** | `/levels/lab03/lab3A` (ELF32, Intel 80386) |
-| **Class** |  |
-| **Root cause** | |
-| **Impact** |  |
+| **Class** | out-of-bounds stack write (unchecked unsigned array index) |
+| **Root cause** | a user-supplied `unsigned int` indexes a 100-entry stack array with no bounds check, giving an arbitrary relative read and write across `main`'s frame |
+| **Impact** | arbitrary code execution as the setuid owner `lab3end` |
 | **Goal** | run shellcode as the setuid owner and retrieve the next `.pass` |
-| **Difficulty** | |
+| **Difficulty** | Low |
 
 ## Overview
 
@@ -155,3 +155,21 @@ int 0x80            ; cd 80
 A short run of NOP-only cells sits in front of the stub as a landing sled, so the return address has a few bytes of tolerance. None of the eight-byte cells, packed as little-endian dwords, has `0xb7` as a top byte, so the value filter passes every store.
  
 The whole thing is written into the array with a sequence of `store` commands, two per cell, at the paired writable indices, and the saved return slot at `data[109]` is set to the address of the first cell. On `quit`, `main` returns into the sled, the sled falls through into the stub, and the stub runs `execve("/bin/sh")` under `lab3end`'s euid.
+
+## Exploitation
+
+The array holds the payload. The NOP-sled cells go in first at the paired writable indices, the stub cells follow, and a final `store` at index `109` points the saved return address at the first sled cell, a `0xbf` stack value the filter accepts.
+
+```asm
+read 4294967290                 -> leaks &data for this run
+store (1,2)(4,5)(7,8)...        -> NOP sled, then the jump-stitched execve stub
+store 109 = <&data + sled>      -> saved return address points at the first sled cell
+quit                            -> main returns into the sled
+```
+
+The leak at the top resolves `&data` for this run, and because ASLR is off the value is stable, so the address written into `data[109]` holds from one run to the next. On `quit`, `main` returns into the sled, the sled falls through into the `execve` stub, and the stub runs under lab3end's euid. id shows the euid transition the `-r-sr-x---` mode set up, with the real uid still `lab3A`, and `/home/lab3end/.pass` is then readable.
+
+![](./img/solution_3A.png)
+
+FLAG: `sw00g1ty_sw4p_h0w_ab0ut_d3m_h0ps`
+
